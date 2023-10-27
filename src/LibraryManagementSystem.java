@@ -9,13 +9,15 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 
 
 public class LibraryManagementSystem {
     private JFrame frame;
     private DefaultTableModel model;
     private String filename = "item.txt";
-
+ArrayList<String> Tittle=new ArrayList<>();
+ArrayList<Integer> popcount=new ArrayList<>();
     public LibraryManagementSystem() {
         frame = new JFrame("Library Management System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -33,7 +35,7 @@ public class LibraryManagementSystem {
 
         JScrollPane scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-//ye kia h?
+
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -42,6 +44,12 @@ public class LibraryManagementSystem {
                     table.addRowSelectionInterval(row, row);
                 }
             }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                table.clearSelection();
+            }
+
         });
 
         // Create a custom button renderer for the "Read" column
@@ -91,49 +99,54 @@ public class LibraryManagementSystem {
         });
         pop_butt.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                openPopularityScreen();
+
+                JFrame pop_frame = new JFrame("Library Item Popularity");
+                pop_frame.setVisible(true);
+                pop_frame.setSize(600, 400);
+                JPanel bar=new JPanel(){
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        super.paintComponent(g);
+
+                        int barWidth = 40;
+                        int spacing = 20;
+                        int x = 60; // Adjust the initial x position for the first bar
+                        int maxData = popcount.stream().max(Integer::compare).orElse(0);
+
+                        // Draw Y-axis labels and values
+                        g.setColor(Color.BLACK);
+                        g.drawLine(50, 30, 50, getHeight() - 30);
+                        for (int i = 0; i <= 10; i++) {
+                            int y = getHeight() - 30 - (i*(getHeight() - 60) / 10);
+                            g.drawString(Integer.toString(i*(maxData / 10)), 10, y);
+                            g.drawLine(45, y, 50, y);
+                        }
+
+                        // Set the origin of the bars to the bottom of the graph
+                        int yOrigin = getHeight() - 30;
+
+                        for (int i = 0; i < popcount.size(); i++) {
+                            int barHeight = (int) (((double) popcount.get(i) / maxData)*(getHeight() - 60));
+                            g.setColor(Color.ORANGE);
+                            g.fillRect(x, yOrigin - barHeight, barWidth, barHeight);
+                            g.setColor(Color.BLACK);
+                            g.drawRect(x, yOrigin - barHeight, barWidth, barHeight);
+
+                            // Rotate the X-axis labels by 90 degrees
+                            Graphics2D g2d = (Graphics2D) g.create();
+                            g2d.translate(x + barWidth / 2, yOrigin - 10);
+                            g2d.rotate(Math.toRadians(90));
+                            g2d.drawString(Tittle.get(i), 0, 0);
+                            g2d.dispose();
+
+                            x += barWidth + spacing;
+
+                        }
+                    }
+                };
+
+                pop_frame.add(bar);
             }
-
-            private void openPopularityScreen() {
-
-                JFrame popularityFrame = new JFrame("Library Item Popularity");
-                popularityFrame.setSize(600, 400);
-//
-//                HashMap<String, Integer> popularityData = new HashMap<>();
-//                popularityData.put("Book 1", 10);
-//                popularityData.put("Book 2", 5);
-//                popularityData.put("Book 3", 8);
-//                popularityData.put("Book 4", 3);
-//
-//                JPanel chartPanel = new JPanel() {
-//                    @Override
-//                    protected void paintComponent(Graphics g) {
-//                        super.paintComponent(g);
-//                        drawBarChart(g, popularityData);
-//                    }
-//                };
-//
-//                popularityFrame.add(chartPanel, BorderLayout.CENTER);
-//                popularityFrame.setVisible(true);
-//            }
-//
-//            private void drawBarChart(Graphics g, HashMap<String, Integer> data) {
-//                int barWidth = 30;
-//                int spacing = 20;
-//                int x = 50;
-//                int maxY = 300;
-//                g.setColor(Color.pink);
-//
-//                for (String item : data.keySet()) {
-//                    int value = data.get(item);
-//                    int barHeight = value * 10;
-//
-//                    g.fillRect(x, maxY - barHeight, barWidth, barHeight);
-//                    g.drawString(item, x, maxY + 20);
-//
-//                    x += barWidth + spacing;
-//                }
-           }
 
             });
 
@@ -194,17 +207,24 @@ public class LibraryManagementSystem {
             public void actionPerformed(ActionEvent e) {
                 String title = titleField.getText();
                 int numRows = model.getRowCount();
+                boolean check=false;
                 for (int i = numRows - 1; i >= 0; i--) {
                     if (model.getValueAt(i, 0).equals(title)) {
                         model.removeRow(i);
                         deleteBookFrame.dispose();
+                        check=true;
                     }
                 }
-
+                if(!check)
+                {
+                    JOptionPane.showMessageDialog(deleteBookFrame, "Item not found in the file",
+                            "Not Found", JOptionPane.ERROR_MESSAGE);
+                }
+                deleteBookFrame.dispose();
                 // Save the updated data back to the file
                 saveDataToFile("item.txt");
 
-                deleteBookFrame.dispose();
+
             }
         });
 
@@ -268,9 +288,16 @@ public class LibraryManagementSystem {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
-                if (data.length == 3) {
-                    model.addRow(data);
-                }
+                Tittle.add(data[0]);
+                popcount.add(Integer.valueOf(data[3]));
+//                if (data.length == 3) {
+                String []storedata=new String[3];
+                storedata[0]=data[0];
+                storedata[1]=data[1];
+                storedata[2]=data[2];
+                    model.addRow(storedata);
+
+//                }
             }
             reader.close();
         } catch (IOException e) {
