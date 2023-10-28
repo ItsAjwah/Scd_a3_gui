@@ -11,7 +11,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultCellEditor;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.JOptionPane;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JTextArea;
@@ -61,62 +62,18 @@ ArrayList<Integer> popcount=new ArrayList<>();
         //yhan se dobara review kerna hy
         // Create a custom renderer for the "Read Item" column
         table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+//        for (int i = 0; i < model.getRowCount(); i++) {
+//            String bookName = model.getValueAt(i, 0).toString(); // Assuming the book name is in the first column
+//            table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox(), bookName));
+//        }
+
         for (int i = 0; i < model.getRowCount(); i++) {
-            String bookName = model.getValueAt(i, 0).toString(); // Assuming the book name is in the first column
-            table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox(), bookName));
+            String bookTitle = model.getValueAt(i, 0).toString(); // Assuming the book title is in the first column
+            table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox(), bookTitle));
         }
 
-        class ButtonRenderer extends DefaultTableCellRenderer {
-            private JButton button;
 
-            public ButtonRenderer() {
-                button = new JButton("Read");
-            }
 
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                return button;
-            }
-        }
-        class ButtonEditor extends DefaultCellEditor {
-            private JButton button;
-            private String bookName;
-
-            public ButtonEditor(JCheckBox checkBox, String bookName) {
-                super(checkBox);
-                this.bookName = bookName;
-                button = new JButton("Read");
-                button.addActionListener(e -> openBookContent());
-            }
-
-            private void openBookContent() {
-                JFrame bookContentFrame = new JFrame("Book Content: " + bookName);
-                bookContentFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                bookContentFrame.setSize(600, 400);
-
-                JTextArea textArea = new JTextArea(20, 60);
-                textArea.setEditable(false);
-
-                try {
-                    BufferedReader reader = new BufferedReader(new FileReader(bookName + ".txt"));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        textArea.append(line + "\n");
-                    }
-                    reader.close();
-                } catch (Exception e) {
-                    textArea.setText("Error reading the book content.");
-                }
-
-                bookContentFrame.add(new JScrollPane(textArea));
-                bookContentFrame.setVisible(true);
-            }
-
-            @Override
-            public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-                return button;
-            }
-        }
 
         JPanel button_panel = new JPanel();
         JButton add_button = new JButton("Add Item");
@@ -209,6 +166,62 @@ ArrayList<Integer> popcount=new ArrayList<>();
         loadDataFromFile(filename);
 
         frame.setVisible(true);
+    }
+
+    class ButtonRenderer extends DefaultTableCellRenderer {
+        private JButton button;
+
+        public ButtonRenderer() {
+            button = new JButton("Read");
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            return button;
+        }
+    }
+    class ButtonEditor extends DefaultCellEditor {
+        private JButton button;
+        private String bookTitle;
+
+        public ButtonEditor(JCheckBox checkBox, String bookTitle) {
+            super(checkBox);
+            this.bookTitle = bookTitle;
+            button = new JButton("Read");
+            button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    openBookContent(bookTitle);
+                }
+            });
+        }
+
+        private void openBookContent(String bookTitle) {
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(bookTitle + ".txt"));
+                StringBuilder content = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    content.append(line).append("\n");
+                }
+                reader.close();
+
+                JFrame contentFrame = new JFrame("Book Content: " + bookTitle);
+                JTextArea textArea = new JTextArea(content.toString());
+                textArea.setEditable(false);
+                contentFrame.add(new JScrollPane(textArea));
+                contentFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                contentFrame.setSize(600, 400);
+                contentFrame.setVisible(true);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Error reading the book content.");
+            }
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            return button;
+        }
     }
 
     private void open_screen_to_add_book() {
