@@ -1,10 +1,7 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -16,7 +13,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JTextArea;
-
+import javax.swing.table.TableCellRenderer;
 
 
 public class LibraryManagementSystem {
@@ -32,7 +29,7 @@ ArrayList<Integer> popcount=new ArrayList<>();
 
         String[] col_names = {"Title", "Author", "Publication Year", "Read Item"};
         model = new DefaultTableModel(col_names, 0) {
-          //override kia so koi column edit na ho ske siwaye read wale ke
+            //override kia so koi column edit na ho ske siwaye read wale ke
             @Override
             public boolean isCellEditable(int row, int column) {
                 return column == 3;
@@ -58,22 +55,8 @@ ArrayList<Integer> popcount=new ArrayList<>();
             }
 
         });
-
-        //yhan se dobara review kerna hy
-        // Create a custom renderer for the "Read Item" column
         table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
-//        for (int i = 0; i < model.getRowCount(); i++) {
-//            String bookName = model.getValueAt(i, 0).toString(); // Assuming the book name is in the first column
-//            table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox(), bookName));
-//        }
-
-        for (int i = 0; i < model.getRowCount(); i++) {
-            String bookTitle = model.getValueAt(i, 0).toString(); // Assuming the book title is in the first column
-            table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox(), bookTitle));
-        }
-
-
-
+        table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JTextField()));
 
         JPanel button_panel = new JPanel();
         JButton add_button = new JButton("Add Item");
@@ -83,9 +66,7 @@ ArrayList<Integer> popcount=new ArrayList<>();
 
         button_panel.add(pop_butt);
 
-        // Function to open the popularity screen
-    
-    button_panel = new JPanel();
+        button_panel = new JPanel();
         button_panel.add(add_button);
         button_panel.add(delete_button);
         button_panel.add(edit_button);
@@ -116,43 +97,40 @@ ArrayList<Integer> popcount=new ArrayList<>();
                 JFrame pop_frame = new JFrame("Library Item Popularity");
                 pop_frame.setVisible(true);
                 pop_frame.setSize(600, 400);
-                JPanel bar=new JPanel(){
+                JPanel bar = new JPanel() {
                     @Override
                     protected void paintComponent(Graphics g) {
                         super.paintComponent(g);
 
                         int bar_width = 40;
                         int gap = 20;
-                        int x = 60; // Adjust the initial x position for the first bar
+                        int x = 60;
                         int max_data = popcount.stream().max(Integer::compare).orElse(0);
 
-                        // Draw Y-axis labels and values
                         g.setColor(Color.BLACK);
                         g.drawLine(50, 30, 50, getHeight() - 30);
                         for (int i = 0; i <= 10; i++) {
-                            int y = getHeight() - 30 - (i*(getHeight() - 60) / 10);
-                            g.drawString(Integer.toString(i*(max_data / 10)), 10, y);
+                            int y = getHeight() - 30 - (i * (getHeight() - 60) / 10);
+                            g.drawString(Integer.toString(i * (max_data / 10)), 10, y);
                             g.drawLine(45, y, 50, y);
                         }
 
-                        // Set the origin of the bars to the bottom of the graph
                         int y_axis_orgin = getHeight() - 30;
 
                         for (int i = 0; i < popcount.size(); i++) {
-                            int bar_height = (int) (((double) popcount.get(i) / max_data)*(getHeight() - 60));
+                            int bar_height = (int) (((double) popcount.get(i) / max_data) * (getHeight() - 60));
                             g.setColor(Color.ORANGE);
                             g.fillRect(x, y_axis_orgin - bar_height, bar_width, bar_height);
                             g.setColor(Color.BLACK);
                             g.drawRect(x, y_axis_orgin - bar_height, bar_width, bar_height);
 
-                            // Rotate the X-axis labels by 90 degrees
                             Graphics2D g2d = (Graphics2D) g.create();
                             g2d.translate(x + bar_width / 2, y_axis_orgin - 10);
                             g2d.rotate(Math.toRadians(90));
                             g2d.drawString(Tittle.get(i), 0, 0);
                             g2d.dispose();
 
-                            x += bar_width + gap;  //spacing add kari width mein
+                            x += bar_width + gap;
 
                         }
                     }
@@ -161,75 +139,126 @@ ArrayList<Integer> popcount=new ArrayList<>();
                 pop_frame.add(bar);
             }
 
-            });
+        });
 
         loadDataFromFile(filename);
 
         frame.setVisible(true);
+
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                int confirm = JOptionPane.showConfirmDialog(frame, "Do you want to exit Ajwa's Library Management System?", "Confirmation", JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    frame.dispose();
+                } else {
+                    frame.setDefaultCloseOperation(frame.DO_NOTHING_ON_CLOSE);
+                }
+            }
+        });
+
     }
 
-    class ButtonRenderer extends DefaultTableCellRenderer {
-        private JButton button;
-
+    // Button Renderer
+    class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {
-            button = new JButton("Read");
+            setOpaque(true);
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            return button;
+            setText("Read");
+            return this;
         }
     }
-    class ButtonEditor extends DefaultCellEditor {
-        private JButton button;
-        private String bookTitle;
 
-        public ButtonEditor(JCheckBox checkBox, String bookTitle) {
-            super(checkBox);
-            this.bookTitle = bookTitle;
-            button = new JButton("Read");
+    class ButtonEditor extends DefaultCellEditor {
+        private String label;
+        private boolean isPushed;
+        private JButton button;
+        private JTable table;
+
+        public ButtonEditor(JTextField textField) {
+            super(textField);
+            setClickCountToStart(1);
+            button = new JButton();
+            button.setOpaque(true);
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    openBookContent(bookTitle);
+                    fireEditingStopped();
                 }
             });
         }
 
-        private void openBookContent(String bookTitle)
+        @Override
+        public Object getCellEditorValue() {
+            if (isPushed) {
+                // Get the book title from the clicked row
+                int row = table.getEditingRow();
+                String bookTitle = (String) table.getValueAt(row, 0);
 
-        {
-            try {
-                BufferedReader reader = new BufferedReader(new FileReader(bookTitle + ".txt"));
-                StringBuilder content = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    content.append(line).append("\n");
+                // Open a new window to display the book's content
+                JFrame contentFrame = new JFrame(bookTitle);
+                JTextArea contentTextArea = new JTextArea();
+                contentTextArea.setEditable(false);
+
+                // Load and display the book's content from a file
+                try {
+                    BufferedReader reader = new BufferedReader(new FileReader(bookTitle + ".txt"));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        contentTextArea.append(line + "\n");
+                    }
+                    reader.close();
+                } catch (IOException e) {
+                    contentTextArea.setText("Error loading book content.");
                 }
-                reader.close();
 
-                JFrame contentFrame = new
-
-                        JFrame("Book Content: " + bookTitle);
-                JTextArea textArea = new JTextArea(content.toString());
-                textArea.setEditable(false);
-                contentFrame.add(new JScrollPane(textArea));
-                contentFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                contentFrame.setSize(600, 400);
+                contentFrame.add(new JScrollPane(contentTextArea));
+                contentFrame.setSize(400, 300);
                 contentFrame.setVisible(true);
 
-                // Dispose of the contentFrame when the user clicks the 'read' button.
-                contentFrame.dispose();
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Error reading the book content.");
+                isPushed = false;
+
+                contentFrame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        int confirm = JOptionPane.showConfirmDialog(contentFrame, "Do you want to exit reading the book?", "Confirmation", JOptionPane.YES_NO_OPTION);
+                        if (confirm == JOptionPane.YES_OPTION) {
+                            contentFrame.dispose();
+                        }
+                        else {
+                            contentFrame.setDefaultCloseOperation(contentFrame.DO_NOTHING_ON_CLOSE);
+                        }
+                    }
+                });
+
             }
+            return label;
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            this.table = table; // Assign the table
+            label = (value == null) ? "" : value.toString();
+            button.setText(label);
+            isPushed = true;
             return button;
         }
+
+        @Override
+        public boolean stopCellEditing() {
+            isPushed = false;
+            return super.stopCellEditing();
+        }
+
+        @Override
+        protected void fireEditingStopped() {
+            super.fireEditingStopped();
+        }
     }
+
 
     private void open_screen_to_add_book() {
         JFrame addbook_frame = new JFrame("Add Book");
