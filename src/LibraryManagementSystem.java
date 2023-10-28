@@ -196,7 +196,9 @@ ArrayList<Integer> popcount=new ArrayList<>();
             });
         }
 
-        private void openBookContent(String bookTitle) {
+        private void openBookContent(String bookTitle)
+
+        {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(bookTitle + ".txt"));
                 StringBuilder content = new StringBuilder();
@@ -206,13 +208,18 @@ ArrayList<Integer> popcount=new ArrayList<>();
                 }
                 reader.close();
 
-                JFrame contentFrame = new JFrame("Book Content: " + bookTitle);
+                JFrame contentFrame = new
+
+                        JFrame("Book Content: " + bookTitle);
                 JTextArea textArea = new JTextArea(content.toString());
                 textArea.setEditable(false);
                 contentFrame.add(new JScrollPane(textArea));
                 contentFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
                 contentFrame.setSize(600, 400);
                 contentFrame.setVisible(true);
+
+                // Dispose of the contentFrame when the user clicks the 'read' button.
+                contentFrame.dispose();
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(null, "Error reading the book content.");
             }
@@ -240,6 +247,7 @@ ArrayList<Integer> popcount=new ArrayList<>();
                 String title = title_field.getText();
                 String author = auhtor_field.getText();
                 String year = year_field.getText();
+                popcount.add(0);
 
                 if (!title.isEmpty() && !author.isEmpty() && !year.isEmpty()) {
                     model.addRow(new Object[]{title, author, year, "Not Read"});
@@ -280,6 +288,7 @@ ArrayList<Integer> popcount=new ArrayList<>();
                 for (int i = row_count - 1; i >= 0; i--) {
                     if (model.getValueAt(i, 0).equals(title)) {
                         model.removeRow(i);
+                        popcount.remove(i);
                         deletebook_frame.dispose();
                         check=true;
                     }
@@ -328,8 +337,9 @@ ArrayList<Integer> popcount=new ArrayList<>();
                         if (model.getValueAt(i, 0).equals(title)) {
                             model.setValueAt(author, i, 1);
                             model.setValueAt(year, i, 2);
-                            saveDataToNewFile(filename);
+                            saveDataToFile(filename);
                             check1=true;
+
                         }
                     }
                     if(!check1)
@@ -388,25 +398,8 @@ ArrayList<Integer> popcount=new ArrayList<>();
                 String title = model.getValueAt(i, 0).toString();
                 String author = model.getValueAt(i, 1).toString();
                 String year = model.getValueAt(i, 2).toString();
-                String readcheck = model.getValueAt(i, 3).toString();
-                writer.write(title + "," + author + "," + year + "," + readcheck + "\n");
-            }
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
-    private void saveDataToNewFile(String filename) {
-        try {
-            FileWriter writer = new FileWriter(filename);
-            int row_count = model.getRowCount();
-            for (int i = 0; i < row_count; i++) {
-                String title = model.getValueAt(i, 0).toString();
-                String author = model.getValueAt(i, 1).toString();
-                String year = model.getValueAt(i, 2).toString();
-                String readcheck = model.getValueAt(i, 3).toString();
-                writer.write(title + "," + author + "," + year + "," + readcheck + "\n");
+                writer.write(title + "," + author + "," + year + ","+popcount.get(i) + "\n");
             }
             writer.close();
         } catch (IOException e) {
